@@ -1,17 +1,16 @@
 // Copyright 2024 Shanghai Biren Technology Co., Ltd.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 package brml
 
 import (
@@ -425,6 +424,25 @@ func ComputeRunningProcess(device Device) (uint32, ProcessInfo, error) {
 		return infoCounts, infos, errors.New(Error2String(ret))
 	}
 	return infoCounts, infos, nil
+}
+
+func ComputeRunningProcessV2(device Device) (uint32, []ProcessInfo, error) {
+	var infoCount uint32
+
+	ret := brmlDeviceGetComputeRunningProcesses_v1(device, &infoCount, nil)
+	if ret != SUCCESS && ret != ERROR_INSUFFICIENT_SIZE {
+		return infoCount, nil, errors.New(Error2String(ret))
+	}
+	if infoCount == 0 {
+		return 0, nil, nil
+	}
+	// 预留 buffer
+	infos := make([]ProcessInfo, 2*infoCount+5)
+	ret = brmlDeviceGetComputeRunningProcesses_v1(device, &infoCount, &infos[0])
+	if ret != SUCCESS {
+		return infoCount, nil, errors.New(Error2String(ret))
+	}
+	return infoCount, infos[:infoCount], nil
 }
 
 func ProcessUtilization(device Device, lastSeenTimestamp uint64) (ProcessUtilizationSample, uint32, error) {

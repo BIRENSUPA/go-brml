@@ -50,6 +50,10 @@ func main() {
 			return
 		}
 
+		fmt.Println("compute running process v1 & v2:")
+		fmt.Println(brml.ComputeRunningProcess(device))
+		fmt.Println(brml.ComputeRunningProcessV2(device))
+
 		sviCount, err := brml.GetSviMode(device)
 		if err != nil {
 			fmt.Println(err.Error())

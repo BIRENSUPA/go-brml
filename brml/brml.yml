@@ -2,13 +2,30 @@
 GENERATOR:
   PackageName: brml
   PackageDescription: "BRML Generation"
-  PackageLicense: ""
+  PackageLicense: |
+    Copyright 2025 Shanghai Biren Technology Co., Ltd.
+     
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+     
+        http://www.apache.org/licenses/LICENSE-2.0
+     
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
   Includes: ["brml.h"]
   FlagGroups:
-    - {name: "LDFLAGS", flags: ["-Wl,--unresolved-symbols=ignore-in-object-files"]}
+    - {name: "LDFLAGS", flags: ["-Wl,--export-dynamic","-Wl,--unresolved-symbols=ignore-in-object-files"]}
 PARSER:
   SourcesPaths: ["brml.h"]
 TRANSLATOR:
+  FuncMap:
+    brmlErrorString:
+      Return: string
   ConstRules:
     defines: eval
     enum: eval
@@ -32,9 +49,11 @@ TRANSLATOR:
       - {action: accept, from: "^brml"}
       - {action: replace, from: "^brml"}
       - {action: replace, from: "_t$"}
+      - {action: replace, from: "_st$"}
       - {transform: export}
       - {action: replace, from: "^VgpuMetadata", to: "brmlVgpuMetadata"}
       - {action: replace, from: "^VgpuPgpuMetadata", to: "brmlVgpuPgpuMetadata"}
+ 
     function:
       - {action: accept, from: "^brml"}
       - {action: replace, from: "^brmlInit$", to: "brmlInit"}
@@ -48,4 +67,5 @@ TRANSLATOR:
       - {action: replace, from: "^brmlDeviceGetAttributes$", to: "brmlDeviceGetAttributes_v1"}
       - {action: replace, from: "^brmlDeviceGetComputeRunningProcesses$", to: "brmlDeviceGetComputeRunningProcesses_v1"}
       - {action: replace, from: "^brmlDeviceGetGraphicsRunningProcesses$", to: "brmlDeviceGetGraphicsRunningProcesses_v1"}
+
       - {transform: unexport}
