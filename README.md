@@ -1,7 +1,7 @@
 # Go Bindings for the Birentech Management Library (BRML)
 
 ```
-go get gitee.com/BirenTechnology/go-brml
+go get github.com/BIRENSUPA/go-brml
 ```
 
 ## Overview

@@ -16,7 +16,7 @@ package main
 import (
 	"fmt"
 
-	"gitee.com/BirenTechnology/go-brml/brml"
+	"github.com/BIRENSUPA/go-brml/brml"
 )
 
 func main() {

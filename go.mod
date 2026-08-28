@@ -1,4 +1,4 @@
-module gitee.com/BirenTechnology/go-brml
+module github.com/BIRENSUPA/go-brml
 
 go 1.16
 
