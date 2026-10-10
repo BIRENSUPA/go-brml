@@ -1,17 +1,7 @@
-// Copyright 2024 Shanghai Biren Technology Co., Ltd.
-// 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-// 
-//     http://www.apache.org/licenses/LICENSE-2.0
-// 
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+/*
+ * Copyright©2020-2023 Shanghai Biren Technology Co., Ltd. All rights reserved.
+ *
+ */
 
 /*
 BRML API Reference
@@ -29,21 +19,14 @@ Supported platforms:
 The BRML library will be found on the standard library path.
 */
 
-#ifndef __brml_brml_h__
-#define __brml_brml_h__
+#ifndef __brml_h__
+#define __brml_h__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define DECLDIR __attribute__((visibility("default")))
-
-
-/**
- * BRML API versioning support
- */
-#define BRML_API_VERSION            1
-#define BRML_API_VERSION_STR        "1"
 
 /***************************************************************************************************/
 /** @defgroup brmlConstants Constants
@@ -106,6 +89,11 @@ extern "C" {
 #define BRML_DEVICE_NAME_BUFFER_SIZE                  64
 
 /**
+ * Maximum Buffer Size for node ip
+ */
+#define BRML_SYSTEM_IP_BUFFER_SIZE                    64
+
+/**
  * Convert from SUPA driver version number to Major version numbers
  */
 #define BRML_SUPA_DRIVER_VERSION_MAJOR(v) ((v) / 1000)
@@ -152,8 +140,8 @@ extern "C" {
  *
  * This may be caused by:
  *   - temperature being too high
- *   - External Power Braker (e.g. the system power supply) 
- *   - Power is too high and thus Fast Trigger protection is working 
+ *   - External Power Braker (e.g. the system power supply)
+ *   - Power is too high and thus Fast Trigger protection is working
  *
  * @see brmlDeviceGetTemperature
  * @see brmlDeviceGetTemperatureThreshold
@@ -189,28 +177,6 @@ extern "C" {
 #define brmlClocksThrottleReasonAll (brmlClocksThrottleReasonHwSlowdown \
     | brmlClocksThrottleReasonHwThermalSlowdown \
     | brmlClocksThrottleReasonHwPowerBrakeSlowdown \
-    )
-
-/** @} */
-
-/** @defgroup brmlEventType Event Types
- * @{
- * Supported Event Types.
- */
-
-//! Topology Event
-#define brmlEventTypeTopology              0x0000000000000002LL
-
-//! Thermal Event
-#define brmlEventTypeThermal               0x0000000000000004LL
-
-//! No Event
-#define brmlEventTypeNone                  0x0000000000000000LL
-
-//! All Events
-#define brmlEventTypeAll (brmlEventTypeNone     \
-    | brmlEventTypeTopology                \
-    | brmlEventTypeThermal                  \
     )
 
 /** @} */
@@ -265,12 +231,12 @@ typedef enum brmlTemperatureSensors_enum {
     BRML_TEMPERATURE_SPC            = 2,    //!< Temperature sensor for the spc
     BRML_TEMPERATURE_BOARD_SENSOR0  = 3,    //!< Temperature sensor for the Board Sensor 0
     BRML_TEMPERATURE_BOARD_SENSOR1  = 4,    //!< Temperature sensor for the Board Sensor 1
-    BRML_TEMPERATURE_BOARD_SENSOR2  = 5,    //!< Temperature sensor for the Board Sensor 2 (br104 not supported)
-    BRML_TEMPERATURE_BOARD_SENSOR3  = 6,    //!< Temperature sensor for the Board Sensor 3 (br104 not supported)
+    BRML_TEMPERATURE_BOARD_SENSOR2  = 5,    //!< Temperature sensor for the Board Sensor 2
+    BRML_TEMPERATURE_BOARD_SENSOR3  = 6,    //!< Temperature sensor for the Board Sensor 3
     BRML_TEMPERATURE_DIODE_SENSOR0  = 7,    //!< Temperature sensor for the Diode Sensor 0
     BRML_TEMPERATURE_DIODE_SENSOR1  = 8,    //!< Temperature sensor for the Diode Sensor 1
-    BRML_TEMPERATURE_DIODE_SENSOR2  = 9,    //!< Temperature sensor for the Diode Sensor 2 (br104 not supported)
-    BRML_TEMPERATURE_DIODE_SENSOR3  = 10,   //!< Temperature sensor for the Diode Sensor 3 (br104 not supported)
+    BRML_TEMPERATURE_DIODE_SENSOR2  = 9,    //!< Temperature sensor for the Diode Sensor 2
+    BRML_TEMPERATURE_DIODE_SENSOR3  = 10,   //!< Temperature sensor for the Diode Sensor 3
 
     // Keep this last
     BRML_TEMPERATURE_COUNT
@@ -340,6 +306,27 @@ typedef enum brmlClockType_enum {
 } brmlClockType_t;
 
 /**
+ * Power type.
+ */
+typedef enum brmlPowerType_enum {
+    BRML_POWER_TYPE_CORE  = 1,       //!< SPC power
+    BRML_POWER_TYPE_MEM   = 2,       //!< Memory power
+    BRML_POWER_TYPE_ASIC  = 3,       //!< ASIC power
+    BRML_POWER_TYPE_BOARD = 4,       //!< Board power
+    BRML_POWER_TYPE_MAX
+} brmlPowerType_t;
+
+/**
+ * GPU series type.
+ */
+typedef enum brmlAsicType_enum {
+    BRML_CHIP_BR166 = 0,
+    BRML_CHIP_BR106 = 1,
+    BRML_CHIP_BR110 = 2,
+    BRML_CHIP_LAST,
+} brmlAsicType_t;
+
+/**
  * GPU Reset type.
  */
 typedef enum brmlGpuResetType_enum {
@@ -371,6 +358,9 @@ typedef enum brmlReturn_enum {
     BRML_ERROR_BUSY = 15,                    //!< The requested resource is in busy
     BRML_ERROR_DRIVER_VERSION_MISMATCH = 16, //!< Driver version mismatch
     BRML_ERROR_IN_USE = 17,                  //!< The GPU is currently in use
+    BRML_ERROR_LIBRARY_NOT_FOUND = 18,       //!< BRML Shared Library couldn't be found or loaded
+    BRML_ERROR_FUNCTION_NOT_FOUND = 19,      //!< BRML Shared Library doesn't implement this function
+    BRML_ERROR_GPU_IS_LOST = 20,             //!< The GPU is lost
     BRML_ERROR_UNKNOWN = 0xFF                //!< Unknown error
 } brmlReturn_t;
 
@@ -501,6 +491,108 @@ typedef enum brmlBrLinkErrorCounter_enum {
     BRML_BRLINK_ERROR_COUNT
 } brmlBrLinkErrorCounter_t;
 
+/**
+ * Gpu working state
+ */
+typedef enum brmlGpuState_enum {
+    BRML_STATE_NORMAL   = 0,    //!< Device normal
+    BRML_STATE_HANG     = 1,    //!< Device hang
+    BRML_STATE_RESETING = 2,    //!< Device is doing reset
+    BRML_STATE_REMOVED  = 3,    //!< Device removed
+    BRML_STATE_RECOVERY = 4,    //!< Device is doing recover
+} brmlGpuState_t;
+
+/**
+ * Recover operation
+ */
+typedef enum brmlRecoverOperation_enum {
+    BRML_OP_NONE    = 0,    //!< No need any operation
+    BRML_OP_RESET   = 1,    //!< Reset gpu
+    BRML_OP_REBOOT  = 2,    //!< Reboot system
+    BRML_OP_UNKNOWN = 3,    //!< Unknown
+} brmlRecoverOperation_t;
+
+/**
+ * Gpu event type
+ */
+typedef enum brmlGpuEventType_enum {
+    BRML_GPU_EVENT_PROBED          = 0,   //!< Driver probed
+    BRML_GPU_EVENT_REMOVE          = 1,   //!< Device Remove
+    BRML_GPU_EVENT_RECOVER         = 2,   //!< Device do recover
+    BRML_GPU_EVENT_RESET_START     = 3,   //!< Start to do reset
+    BRML_GPU_EVENT_RESET_END       = 4,   //!< Reset done
+    BRML_GPU_EVENT_SMMU_FAULT      = 5,   //!< SMMU fault
+    BRML_GPU_EVENT_QUEUE_HANG      = 6,   //!< Queue hang
+    BRML_GPU_EVENT_SPC_HANG        = 7,   //!< SPC hang
+    BRML_GPU_EVENT_CP_HANG         = 8,   //!< CP hang
+    BRML_GPU_EVENT_DMA_HANG        = 9,   //!< DMA hang
+    BRML_GPU_EVENT_VIDEO_HANG      = 10,  //!< Video hang
+    BRML_GPU_EVENT_DMABUS_ERROR    = 11,  //!< DMA bus error
+    BRML_GPU_EVENT_LINK_NORMAL     = 12,  //!< PCIE bus recover to normal
+    BRML_GPU_EVENT_PCIBUS_ERROR    = 13,  //!< PCIE bus error
+    BRML_GPU_EVENT_FWGEN_ERROR     = 14,  //!< Firmware error
+    BRML_GPU_EVENT_FWBT_ERROR      = 15,  //!< Firmware heart beat error
+    BRML_GPU_EVENT_FWPWR_ERROR     = 16,  //!< Firmware get power error
+    BRML_GPU_EVENT_1BIT_ECC_ERROR  = 17,  //!< 1 bit (Corrected) ecc error
+    BRML_GPU_EVENT_2BIT_ECC_ERROR  = 18,  //!< 2 bit (Uncorrected) ecc error
+    BRML_GPU_EVENT_MEM_USED_UP     = 19,  //!< HBM used up
+    // Keep this last
+    BRML_GPU_EVENT_END,
+} brmlGpuEventType_t;
+
+/**
+ * P2P training state
+ */
+typedef enum brmlRemoteP2pTrainingState_enum {
+    BRML_P2P_TRAINIG_NOT_STARTED   = 0,
+    BRML_P2P_TRAINIG_IN_PROGRESS   = 1,
+    BRML_P2P_TRAINIG_READY         = 2,
+    BRML_P2P_TRAINIG_FAILED        = 3,
+    BRML_P2P_TRAINIG_NOT_SUPPORTED = 4,
+    BRML_P2P_TRAINIG_CROSSLINK_OK  = 5,
+} brmlRemoteP2pTrainingState_t;
+
+/**
+ * Noc client
+ */
+typedef enum brmlNocClient_enum {
+    BRML_NOC_SPC     = 0,
+    BRML_NOC_CP_SDMA = 1,
+    BRML_NOC_P2P     = 2,
+    BRML_NOC_MMU     = 3,
+    BRML_NOC_MCAST   = 4,
+    BRML_NOC_VIDEO   = 5,
+    BRML_NOC_L2      = 6,
+} brmlNocClient_t;
+
+/**
+ * Noc client priority
+ */
+typedef enum brmlNocPriority_enum {
+    BRML_NOC_PRIORITY_0 = 0,  // lowest priority
+    BRML_NOC_PRIORITY_1 = 1,  // priority 1
+    BRML_NOC_PRIORITY_2 = 2,  // priority 2
+    BRML_NOC_PRIORITY_3 = 3,  // priority 3
+} brmlNocPriority_t;
+
+/**
+ * P2p link capability
+ */
+typedef enum brmlP2pLinkCapability_enum {
+    BRML_P2P_CAP_P2P_SUPPORTED = 0,
+    BRML_P2P_CAP_COUNT
+} brmlP2pLinkCapability_t;
+
+/**
+ * GPU Fabric state
+ */
+typedef enum brmlGpuFabricState_enum {
+    BRML_GPU_FABRIC_STATE_NOT_SUPPORTED = 0,
+    BRML_GPU_FABRIC_STATE_NOT_STARTED   = 1,
+    BRML_GPU_FABRIC_STATE_IN_PROGRESS   = 2,
+    BRML_GPU_FABRIC_STATE_COMPLETED     = 3,
+} brmlGpuFabricState_t;
+
 /** @} */
 
 /***************************************************************************************************/
@@ -606,6 +698,16 @@ typedef struct brmlMemory_st {
 } brmlMemory_t;
 
 /**
+ * Memory allocation information for a device.
+ */
+typedef struct brmlMemory_v2_st {
+    unsigned long long total;        //!< Total installed FB memory (in bytes)
+    unsigned long long free;         //!< Unallocated FB memory (in bytes)
+    unsigned long long used;         //!< Allocated FB memory (in bytes).
+    unsigned long long fragment;     //!< Fragment FB memory (in bytes).
+} brmlMemory_v2_t;
+
+/**
  * Information about running compute processes on the GPU
  */
 typedef struct brmlProcessInfo_st {
@@ -631,16 +733,8 @@ typedef struct brmlProcessUtilizationSample_st {
     unsigned int pid;                   //!< PID of process
     unsigned long long timeStamp;       //!< CPU Timestamp in microseconds
     unsigned int memUtil;               //!< Frame Buffer Memory Util Value
+    unsigned int spcUtil;               //!< SPC Util value, 0xffffffff for invalid data
 } brmlProcessUtilizationSample_t;
-
-/**
- * Information about occurred event
- */
-typedef struct brmlEventData_st {
-    brmlDevice_t        device;             //!< Specific device where the event occurred
-    unsigned long long  eventType;          //!< Specific type about the event occurred
-    unsigned long long  eventData;          //!< Stores event data
-} brmlEventData_t;
 
 /**
  * Structure to hold power samples data
@@ -661,21 +755,144 @@ typedef struct brmlP2pStatus_st {
 } brmlP2pStatus_t;
 
 /**
+ * Structure to hold p2p port infomation
+ */
+typedef struct brmlP2pLinkInfo_st {
+    unsigned int port;        //!< P2P port id
+    unsigned int gen;         //!< P2P link generation
+    brmlEnableState_t state;  //!< P2P link state
+} brmlP2pLinkInfo_t;
+
+/**
+ * Structure to hold p2p link data
+ */
+typedef struct brmlP2pStatus_v3_st {
+    brmlP2pLinkType_t type;        //!< P2P link type
+    unsigned int linkNum;          //!< P2P link number
+    brmlP2pLinkInfo_t p2pLink[8];  //!< P2P link Information
+} brmlP2pStatus_v3_t;
+
+/**
  * Structure to hold p2p throughput
  */
 typedef struct brmlP2pThroughput_st {
-    unsigned int rx_throughput; //!< P2p rx throughput
-    unsigned int tx_throughput; //!< P2p tx throughput
+    unsigned int rx_throughput; //!< P2p rx throughput (MB/s)
+    unsigned int tx_throughput; //!< P2p tx throughput (MB/s)
 } brmlP2pThroughput_t;
 
 /**
- * Structure to memory bandwidth
+ * Structure to hold p2p data traffic
+ */
+typedef struct brmlP2pTraffic_st {
+    unsigned long long rxTraffic; //!< P2p rx data traffic (MB)
+    unsigned long long txTraffic; //!< P2p tx data traffic (MB)
+} brmlP2pTraffic_t;
+
+/**
+ * Structure to hold memory bandwidth
  */
 typedef struct brmlMemoryBandwidth_st {
-    unsigned int read_bandwidth;   //!< GPU memory read bandwidth
-    unsigned int write_bandwidth;  //!< GPU memory write bandwidth
+    unsigned int read_bandwidth;   //!< GPU memory read bandwidth (MB/s)
+    unsigned int write_bandwidth;  //!< GPU memory write bandwidth (MB/s)
 } brmlMemoryBandwidth_t;
 
+/**
+ * Structure to hold memory bandwidth utilization rates
+ */
+typedef struct brmlMemoryUtilization_st {
+    unsigned int readUtil;   //!< Percent of memory read bandwidth utilization
+    unsigned int writeUtil;  //!< Percent of memory write bandwidth utilization
+    unsigned int copyUtil;   //!< Percent of memory copy (read and write) bandwidth utilization
+} brmlMemoryUtilization_t;
+
+/**
+ * Structure to hold Gpu event information
+ */
+typedef struct brmlGpuEventInfo_st {
+    brmlGpuEventType_t eventType;   //!< The gpu event type
+    unsigned long long timestamp;   //!< The last timestamp of event
+    unsigned int count;             //!< The total count of the event
+} brmlGpuEventInfo_t;
+
+/**
+ * Structure to hold gpu id and pci info
+ */
+typedef struct brmlGpuIdInfo_st {
+    unsigned int gpuId;              //!< GPU id
+    unsigned int domain;             //!< The PCI domain on which the device's bus resides, 0 to 0xffffffff
+    unsigned int bus;                //!< The bus on which the device resides, 0 to 0xff
+    unsigned int device;             //!< The device's id on the bus, 0 to 31
+    unsigned int function;           //!< The device's function id on the bus, 0 to 7
+} brmlGpuIdInfo_t;
+
+/**
+ * Structure to hold gpu info in system
+ */
+typedef struct brmlGpuList_st {
+    unsigned int count;              //! GPU count in system
+    brmlGpuIdInfo_t gpuIdInfo[16];   //! GPU id info in system
+} brmlGpuList_t;
+
+/**
+ * Structure to hold optical module infomation
+ */
+typedef struct brmlOpticalModuleInfo_st{
+    char vendorName[32];             //! optical module vendor name
+    char vendorPN[32];               //! optical module vendor pn
+    char vendorSN[32];               //! optical module vendor sn
+    char powerState[32];             //! optical module power state
+    unsigned int temperature;        //! optical module temperature (C)
+    unsigned int voltage;            //! optical module voltage, in millivolt
+} brmlOpticalModuleInfo_t;
+
+/**
+ * Structure to hold p2p link speed
+ */
+typedef struct brmlP2pLinkSpeed_st{
+    unsigned int generation;
+    unsigned int width;
+} brmlP2pLinkSpeed_t;
+
+/**
+ * Structure to hold p2p link state info
+ */
+typedef struct brmlP2pLinkState_st{
+    unsigned int isReady;         //!< is p2p link is ready, 0: not ready, 1: ready
+    unsigned int linkState;       //!< 0: link down, 1: link up, 2: link up (in recovery mode)
+    unsigned int generation;      //!< need be checked after \a linkState returns not 0, 0 means link down
+    unsigned int width;           //!< need be checked after \a linkState returns not 0, 0 means link down
+    unsigned int maxPayloadSize;  //!< p2p link max payload size, 0 means invalid value (not RC or EP)
+    unsigned int busMasterEnable; //!< boolean values, is p2p link bus master enabled
+    brmlRemoteP2pTrainingState_t trainingState;   //!< p2p link training state
+} brmlP2pLinkState_t;
+
+/**
+ * Structure to hold ocs connection information
+ */
+typedef struct brmlOcsConnInfo_st{
+    unsigned int nodeId;                  //!< node id
+    unsigned int clusterId;               //!< cluster id
+    unsigned int gpuId;                   //!< GPU id (hardware id)
+    unsigned int port;                    //!< port id
+    unsigned int domain;                  //!< The PCI domain on which the device's bus resides, 0 to 0xffffffff
+    unsigned int bus;                     //!< The bus on which the device resides, 0 to 0xff
+    unsigned int device;                  //!< The device's id on the bus, 0 to 31
+    unsigned int function;                //!< The device's function id on the bus, 0 to 7
+    char busId[BRML_DEVICE_PCI_BUS_ID_BUFFER_SIZE];  //!< The tuple domain:bus:device.function PCI identifier (&amp; NULL terminator)
+    char nodeIp[BRML_SYSTEM_IP_BUFFER_SIZE]; //!< The node ip
+} brmlOcsConnInfo_t;
+
+/**
+ * Structure to hold GPU fabric information
+ */
+typedef struct brmlGpuFabricInfo_st{
+    unsigned int version;          //!< version
+    unsigned char clusterUuid[16]; //!< Uuid of the cluster
+    brmlReturn_t status;           //!< Error status, need be checked after \a state returns 'completed'
+    unsigned int cliqueId;         //!< ID of the fabric clique
+    brmlGpuFabricState_t state;    //!< Current gpu fabric state
+    unsigned int healthMask;       //!< Health status mask
+} brmlGpuFabricInfo_t;
 /** @} */
 
 /***************************************************************************************************/
@@ -749,7 +966,7 @@ const DECLDIR char* brmlErrorString(brmlReturn_t result);
 /**
  * Get the system's graphics driver version.
  *
- * The version identifier is an alphanumeric string.  
+ * The version identifier is an alphanumeric string.
  * It will be at most 80 characters (including the NULL terminator).
  * See \ref brmlConstants::BRML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE.
  *
@@ -771,7 +988,7 @@ brmlReturn_t DECLDIR brmlSystemGetDriverVersion(char* version, unsigned int leng
  * It will return the current version of Umd driver.
  * If the UMD library is not found, this function will return an error.
  *
- * @param umdDriverVersion                     UMD driver version identifier 
+ * @param umdDriverVersion                     UMD driver version identifier
  *
  * @return
  *         - \ref BRML_SUCCESS                 \a umdDriverVersion has been set successfully
@@ -786,7 +1003,7 @@ brmlReturn_t DECLDIR brmlSystemGetUmdDriverVersion(int* umdDriverVersion);
  * Get the version of the BRML library.
  *
  * It will return the current version of BRML.
- * The version identifier is an alphanumeric string.  
+ * The version identifier is an alphanumeric string.
  * It will be at most 80 characters (including the NULL terminator).
  * See \ref brmlConstants::BRML_SYSTEM_BRML_VERSION_BUFFER_SIZE.
  *
@@ -804,8 +1021,8 @@ brmlReturn_t DECLDIR brmlSystemGetBRMLVersion(char* version, unsigned int length
 /**
  * Get the version of the SUPA driver.
  *
- * It will return the currently version of SUPA.
- * If the SUPA library is not found, this function will return an error.
+ * It will return the currently version of SUPA driver.
+ * If the SUPA driver library is not found, this function will return an error.
  *
  * @param supaDriverVersion                    SUPA version identifier
  *
@@ -926,6 +1143,23 @@ brmlReturn_t DECLDIR brmlDeviceGetVendorName(brmlDevice_t device, char* boardVen
 brmlReturn_t DECLDIR brmlDeviceGetMemoryInfo(brmlDevice_t device, brmlMemory_t* memory);
 
 /**
+ * Get the amount of used, fragment, free and total memory available on the device, in bytes.
+ *
+ * @param device                               The target device identifier
+ * @param memory                               The amount of used, fragment, free and total memory available
+ *                                             on the device, in bytes.
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a memory is got successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, \a memory is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     this query is not supported by \a device
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ *
+ */
+brmlReturn_t DECLDIR brmlDeviceGetMemoryInfo_v2(brmlDevice_t device, brmlMemory_v2_t* memory);
+
+/**
  * Get the device throttled status due to power or thermal constraints.
  *
  * @param device                               The target device identifier
@@ -949,7 +1183,6 @@ brmlReturn_t DECLDIR brmlDeviceGetViolationStatus(brmlDevice_t device, brmlPerfP
  *
  * Returned process name is cropped to provided length.
  * The name string is encoded in ANSI.
- * 
  *
  * @param pid                                  The process id
  * @param name                                 The process name
@@ -966,6 +1199,18 @@ brmlReturn_t DECLDIR brmlDeviceGetViolationStatus(brmlDevice_t device, brmlPerfP
  */
 brmlReturn_t DECLDIR brmlSystemGetProcessName(unsigned int pid, char* name, unsigned int length);
 
+/**
+ * Get the GPU in the computer system.
+ *
+ * @param gpuList                              The gpu in system
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a gpuList has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a gpuList is NULL
+ */
+brmlReturn_t DECLDIR brmlDeviceGetGpuList(brmlGpuList_t* gpuList);
+
 /** @} */
 
 /***************************************************************************************************/
@@ -980,8 +1225,8 @@ brmlReturn_t DECLDIR brmlSystemGetProcessName(unsigned int pid, char* name, unsi
 /**
  * Get the version of specific firmware.
  *
- * The version identifier is an alphanumeric string.  
- * It will be at most 80 characters in length(including the NULL terminator).  
+ * The version identifier is an alphanumeric string.
+ * It will be at most 80 characters in length(including the NULL terminator).
  * See \ref brmlConstants::BRML_SYSTEM_FIRMWARE_VERSION_BUFFER_SIZE.
  *
  * @param device                               The target device identifier
@@ -996,32 +1241,32 @@ brmlReturn_t DECLDIR brmlSystemGetProcessName(unsigned int pid, char* name, unsi
  *         - \ref BRML_ERROR_INSUFFICIENT_SIZE \a length is too small
  *         - \ref BRML_ERROR_NOT_SUPPORTED     \a firmwareType is NULL
  */
-brmlReturn_t DECLDIR brmlDeviceGetFirmwareVersion(brmlDevice_t device, brmlGPUFirmwareType_t firmwareType,     
+brmlReturn_t DECLDIR brmlDeviceGetFirmwareVersion(brmlDevice_t device, brmlGPUFirmwareType_t firmwareType,
                                                   char* version, int length);
 
 
 /**
-* Get the number of GPUs in the computer system. 
-* GPUs BRML can not access will not be included.
-*
-* @param deviceCount                          The amount of accessible devices 
-*
-* @return
-*         - \ref BRML_SUCCESS                 \a deviceCount has been set successfully
-*         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
-*         - \ref BRML_ERROR_INVALID_ARGUMENT  \a deviceCount is NULL
-*/
+ * Get the number of GPUs in the computer system.
+ * GPUs BRML can not access will not be included.
+ *
+ * @param deviceCount                          The amount of accessible devices
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a deviceCount has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a deviceCount is NULL
+ */
 brmlReturn_t DECLDIR brmlDeviceGetCount(unsigned int* deviceCount);
 
 /**
  * Get the device handle through Index
  *
- * Valid indices are determined by \ref brmlDeviceGetCount() and delivered by \a deviceCount. 
+ * Valid indices are determined by \ref brmlDeviceGetCount() and delivered by \a deviceCount.
  * For example, if \a deviceCount is 2, the valid indices will be 0 and 1, corresponding to GPU 0 and GPU 1.
  *   
  *
  * The Index may change during reboots. 
- * For this reason it is recommended that devices are looked up by their PCI ids or GPU UUID. 
+ * For this reason it is recommended that devices are looked up by their PCI ids or GPU UUID.
  * See \ref brmlDeviceGetHandleByPciBusId().
  *
  * Note: The BRML index may not correlate with other APIs, such as the SUPA device index.
@@ -1043,24 +1288,15 @@ brmlReturn_t DECLDIR brmlDeviceGetHandleByIndex(unsigned int index, brmlDevice_t
 /**
  * Get the device handle through its board serial number.
  *
- * This number corresponds to the value printed directly on the board.
- *
- * @deprecated Since more than one GPU can exist on a single board this function is deprecated in favor
- *             of \ref brmlDeviceGetHandleByUUID.
- *             For dual GPU boards this function will return BRML_ERROR_INVALID_ARGUMENT.
- *
  * @param serial                               The board serial number
  * @param device                               The device handle of the specified board
  *
  * @return
  *         - \ref BRML_SUCCESS                  \a device has been set successfully
  *         - \ref BRML_ERROR_UNINITIALIZED      BRML has not been initialized
- *         - \ref BRML_ERROR_INVALID_ARGUMENT   \a serial is invalid, \a device is NULL or more than one
- *                                              device has the same serial (dual GPU boards)
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT   \a serial is invalid or \a device is NULL
  *         - \ref BRML_ERROR_NOT_FOUND          \a serial does not match a valid device on the system
  *         - \ref BRML_ERROR_UNKNOWN            unknown error occurs
- *
- * @see brmlDeviceGetHandleByUUID
  */
 brmlReturn_t DECLDIR brmlDeviceGetHandleBySerial(const char* serial, brmlDevice_t* device);
 
@@ -1086,11 +1322,11 @@ brmlReturn_t DECLDIR brmlDeviceGetHandleByUUID(const char* uuid, brmlDevice_t* d
 /**
  * Get the BRML index of this device.
  *
- * Valid indices are determined by \ref brmlDeviceGetCount() and delivered by \a deviceCount. 
+ * Valid indices are determined by \ref brmlDeviceGetCount() and delivered by \a deviceCount.
  * For example, if \a deviceCount is 2, the valid indices will be 0 and 1, corresponding to GPU 0 and GPU 1.
  *
  * The Index may change during reboots. 
- * For this reason it is recommended that devices are looked up by their PCI ids or GPU UUID. 
+ * For this reason it is recommended that devices are looked up by their PCI ids or GPU UUID.
  * See \ref brmlDeviceGetHandleByPciBusId().
  *
  * Note: The BRML index may not correlate with other APIs, such as the SUPA device index.
@@ -1108,6 +1344,21 @@ brmlReturn_t DECLDIR brmlDeviceGetHandleByUUID(const char* uuid, brmlDevice_t* d
  * @see brmlDeviceGetCount()
  */
 brmlReturn_t DECLDIR brmlDeviceGetIndex(brmlDevice_t device, unsigned int* index);
+
+/**
+ * Get card name.
+ *
+ * @param device                               The target device identifier
+ * @param cardName                             The card name
+ * @param length                               Length of the buffer reference
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                  \a device has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED      BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT   \a device is invailid or \a cardName is NULL
+ *         - \ref BRML_ERROR_INSUFFICIENT_SIZE  \a length is too small
+ */
+brmlReturn_t DECLDIR brmlDeviceGetCardName(brmlDevice_t device, char* cardName, unsigned int length);
 
 /**
  * Get the BRML node id of this device.
@@ -1139,8 +1390,40 @@ brmlReturn_t DECLDIR brmlDeviceGetNodeId(brmlDevice_t device, unsigned int* node
 brmlReturn_t DECLDIR brmlDeviceGetHandleByNodeId(unsigned int nodeId, brmlDevice_t* device);
 
 /**
+ * Get the gpu id of this device.
+ *
+ * @param gpuId                                The target GPU's ID
+ * @param device                               The device handle
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                  \a device has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED      BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT   \a device is invailid
+ *         - \ref BRML_ERROR_NOT_FOUND          \a gpuId does not match a device
+ *
+ */
+brmlReturn_t DECLDIR brmlDeviceGetGpuId(brmlDevice_t device, unsigned int* gpuId);
+
+/**
+ * Get the device handle through gpu id.
+ *
+ * @param gpuId                                The device gpu id
+ * @param device                               The device handle
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a device has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invailid
+ *         - \ref BRML_ERROR_NOT_FOUND         \a gpuId does not match a valid device on the system.
+ */
+brmlReturn_t DECLDIR brmlDeviceGetHandleByGpuId(unsigned int gpuId, brmlDevice_t* device);
+
+/**
  * Reset the GPU node.
  * Requires root/admin permissions.
+ *
+ * Reset the GPU node needs some time, especially for multi GPU. For the return value \ref BRML_ERROR_TIMEOUT,
+ * it means GPU reset has beed triggered successfully but not finished, probably it is in queue waiting for reset.
  *
  * @param device                               The target device identifier
  * @param type                                 GPU Reset type
@@ -1149,6 +1432,8 @@ brmlReturn_t DECLDIR brmlDeviceGetHandleByNodeId(unsigned int nodeId, brmlDevice
  *         - \ref BRML_SUCCESS                 new settings has been set successfully
  *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
  *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a type is NULL
+ *         - \ref BRML_ERROR_BUSY              \a device is busy with doing gpu reset
+ *         - \ref BRML_ERROR_TIMEOUT           \a device doing reset timeout
  */
 brmlReturn_t DECLDIR brmlDeviceResetGpu(brmlDevice_t device, brmlGpuResetType_t type);
 
@@ -1281,8 +1566,25 @@ brmlReturn_t DECLDIR brmlDeviceGetCurrPcieLinkGeneration(brmlDevice_t device, un
  *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
-brmlReturn_t DECLDIR brmlDeviceGetPcieThroughput(brmlDevice_t device, brmlPcieUtilCounter_t counter,     
+brmlReturn_t DECLDIR brmlDeviceGetPcieThroughput(brmlDevice_t device, brmlPcieUtilCounter_t counter,
                                                  unsigned int* value);
+
+/**
+ * Get PCIe utilization information.
+ *
+ * @param device                               The target device identifier
+ * @param counter                              The specific counter type that fits \ref brmlPcieUtilCounter_t
+ * @param value                                Throughput in KB/s
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a value has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a counter is invalid, or \a value is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetPcieThroughput_v2(brmlDevice_t device, brmlPcieUtilCounter_t counter,
+                                                    unsigned int* value);
 
 /**
  * Get the PCIe replay counts.
@@ -1330,6 +1632,65 @@ brmlReturn_t DECLDIR brmlDeviceGetPcieReplayNumberRollovers(brmlDevice_t device,
 brmlReturn_t DECLDIR brmlDeviceGetPcieErrorCounter(brmlDevice_t device, brmlPciErrorCounter_t* counter);
 
 /**
+ * Clear the PCIe group error counter.
+ *
+ * @param device                               The target device indentifier
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 The error counter is cleared
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceClearPcieErrorCounter(brmlDevice_t device);
+
+/**
+ * Get the p2p group error counter.
+ *
+ * @param device                               The target device indentifier
+ * @param port                                 Specifies the p2p port to be queried
+ * @param counter                              The counter's values
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a counter has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid, or \a counter is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2pErrorCounter(brmlDevice_t device, unsigned int port, brmlPciErrorCounter_t* counter);
+
+/**
+ * Clear the P2p group error counter.
+ *
+ * @param device                               The target device indentifier
+ * @param port                                 Specifies the p2p port to clear error
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 The error counter is cleared
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceClearP2pErrorCounter(brmlDevice_t device, unsigned int port);
+
+/**
+ * Get GPU PF mode.
+ *
+ * @param device                               The target device indentifier
+ * @param mode                                 The GPU PF mode
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a mode has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, or \a mode is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ */
+brmlReturn_t DECLDIR brmlDeviceGetPFMode(brmlDevice_t device, unsigned int* mode);
+
+/**
  * Get the virtualization mode corresponding to the GPU.
  *
  * @param device                                The target device indentifier
@@ -1356,6 +1717,43 @@ brmlReturn_t DECLDIR brmlDeviceGetVirtualizationMode(brmlDevice_t device, brmlGp
  */
 brmlReturn_t DECLDIR brmlDeviceGetGpuInfo(brmlDevice_t device, brmlGPUInfo_t* info);
 
+/**
+ * Retrieves the name of this device.
+ *
+ * It will be at most 64 characters (including the NULL terminator).
+ * See \ref brmlConstants::BRML_DEVICE_NAME_BUFFER_SIZE.
+ *
+ * @param device                               The target device identifier
+ * @param name                                 Reference in which to return the product name
+ * @param length                               The maximum length of the string returned in \a name
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 if \a name has been set
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  if \a device is invalid or \a name is NULL
+ *         - \ref BRML_ERROR_INSUFFICIENT_SIZE if \a length is too small
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetName(brmlDevice_t device, char *name, unsigned int length);
+
+/**
+ * Retrieves the board serial number of this device.
+ *
+ * It will be at most 64 characters (including the NULL terminator).
+ * See \ref brmlConstants::BRML_DEVICE_SERIAL_BUFFER_SIZE.
+ *
+ * @param device                               The target device identifier
+ * @param serial                               Reference in which to return the board serial
+ * @param length                               The maximum length of the string returned in \a serial
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 if \a serial has been set
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  if \a device is invalid or \a serial is NULL
+ *         - \ref BRML_ERROR_INSUFFICIENT_SIZE if \a length is too small
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetSerial(brmlDevice_t device, char *serial, unsigned int length);
 /**
  * Get the current clock speeds for the device.
  *
@@ -1417,7 +1815,7 @@ brmlReturn_t DECLDIR brmlDeviceSetClockFreqs(brmlDevice_t device, brmlClockType_
  *
  * See \ref brmlTemperatureSensors_t for details on available temperature sensors.
  *
- * Note: Only get temperature range for HBM temperature, \a temp (0b011:<85C, 0b010:85C~95C, 0b110:95~120C)
+ * Note: Only get temperature range for HBM temperature, \a temp (0b011:<85C, 0b010:85C~95C, 0b110:95~105C)
  *
  * @param device                               The target device identifier
  * @param sensorType                           The type of temperature sensor
@@ -1432,6 +1830,22 @@ brmlReturn_t DECLDIR brmlDeviceSetClockFreqs(brmlDevice_t device, brmlClockType_
  */
 brmlReturn_t DECLDIR brmlDeviceGetTemperature(brmlDevice_t device, brmlTemperatureSensors_t sensorType,
                                               unsigned int* temp);
+
+/**
+ * Get the current memory temperature for the device, in degrees C.
+ *
+ * @param device                               The target device identifier
+ * @param minTemp                              The memory minor temperature
+ * @param maxTemp                              The memory max temperature
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a temp has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, \a minTemp or \a maxTemp is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not have the specified sensor
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetMemoryTemperature(brmlDevice_t device, unsigned int* minTemp, unsigned int* maxTemp);
 
 /**
  * Get the temperature threshold for the GPU with the specified threshold type, in degrees C.
@@ -1453,7 +1867,7 @@ brmlReturn_t DECLDIR brmlDeviceGetTemperatureThreshold(brmlDevice_t device, brml
                                                        unsigned int* temp);
 
 /**
- * Get the power management limit for this GPU, in milliwatts.
+ * Get the power management limit for this GPU, in watts.
  *
  * The power limit defines the upper boundary for the card's power draw. If the card's total power draw reaches this
  * limit the power management algorithm kicks in.
@@ -1461,7 +1875,7 @@ brmlReturn_t DECLDIR brmlDeviceGetTemperatureThreshold(brmlDevice_t device, brml
  * This reading is only available if power management mode is supported.
  *
  * @param device                               The target device identifier
- * @param limit                                The power management limit, in milliwatts
+ * @param limit                                The power management limit, in watts
  *
  * @return
  *         - \ref BRML_SUCCESS                 \a limit has been set successfully
@@ -1473,13 +1887,13 @@ brmlReturn_t DECLDIR brmlDeviceGetTemperatureThreshold(brmlDevice_t device, brml
 brmlReturn_t DECLDIR brmlDeviceGetPowerManagementLimit(brmlDevice_t device, unsigned int* limit);
 
 /**
- * Get the power threshold.
+ * Get the power threshold, in watts.
  *
  * The power limit defines the upper boundary for max power. If the card's total power draw reaches this
  * limit the power management algorithm kicks in.
  *
  * @param device                               The target device identifier
- * @param threshold                            The power threshold
+ * @param threshold                            The power threshold, in watts
  *
  * @return
  *         - \ref BRML_SUCCESS                 \a limit has been set successfully
@@ -1491,13 +1905,13 @@ brmlReturn_t DECLDIR brmlDeviceGetPowerManagementLimit(brmlDevice_t device, unsi
 brmlReturn_t DECLDIR brmlDeviceGetPowerThreshold(brmlDevice_t device, unsigned int* threshold);
 
 /**
- * Set the power threshold.
+ * Set the power threshold, in watts.
  *
  * The power limit defines the upper boundary for max power. If the card's total power draw reaches this
  * limit the power management algorithm kicks in.
  *
  * @param device                               The target device identifier
- * @param threshold                            The power threshold need to set
+ * @param threshold                            The power threshold need to set, in watts
  *
  * @return
  *         - \ref BRML_SUCCESS                 \a limit has been set successfully
@@ -1528,7 +1942,7 @@ brmlReturn_t DECLDIR brmlDeviceGetPowerManagementLimitConstraints(brmlDevice_t d
 /**
  * Get power usage for \a device, in milliwatts.
  *
- * For fully supported devices.
+ * \a power is the board power, \ref brmlDeviceGetPowerValue can be used to get power for different type.
  *
  * @param device                               The target device identifier
  * @param power                                The power usage, in milliwatts
@@ -1543,8 +1957,26 @@ brmlReturn_t DECLDIR brmlDeviceGetPowerManagementLimitConstraints(brmlDevice_t d
 brmlReturn_t DECLDIR brmlDeviceGetPowerUsage(brmlDevice_t device, unsigned int* power);
 
 /**
+ * Get the power for \a device of different type, in milliwatts.
+ *
+ * See \ref brmlPowerType_t for details on available type.
+ *
+ * @param device                               The target device identifier
+ * @param type                                 The power type to query
+ * @param power                                The power usage, in milliwatts
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a power has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device, \a type is invalid or \a power is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetPowerValue(brmlDevice_t device, brmlPowerType_t type, unsigned int* power);
+
+/**
  * Get the power samples maintained in the buffer for the device.
- * 
+ *
  * @param device                               The target device identifier
  * @param power                                The power samples
  *
@@ -1577,7 +2009,7 @@ brmlReturn_t DECLDIR brmlDeviceGetCurrentClocksThrottleReasons(brmlDevice_t devi
                                                                unsigned long long* clocksThrottleReasons);
 
 /**
- * Get the average Current value for the device, in milliampere. 
+ * Get the average Current value for the device, in milliampere.
  *
  * @param device                               The target device identifier
  * @param current                              The average Current value
@@ -1629,6 +2061,44 @@ brmlReturn_t DECLDIR brmlDeviceGetComputeMode(brmlDevice_t device, brmlComputeMo
 brmlReturn_t DECLDIR brmlDeviceSetComputeMode(brmlDevice_t device, brmlComputeMode_t mode);
 
 /**
+ * Get the current persistence mode for the device.
+ *
+ * The persistence mode reflects the dynamic frequency scaling. Normally firmware will update the spc frequency
+ * automaticly. If the mode is enabled firmware will not adjust the spc frequency based on power.
+ *
+ * See \ref brmlEnableState_t for details on allowed modes.
+ *
+ * @param device                               The target device identifier
+ * @param mode                                 The current persistence mode
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a mode has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a mode is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetPersistenceMode(brmlDevice_t device, brmlEnableState_t* mode);
+
+/**
+ * Set the persistence mode for the device.
+ *
+ * Requires root/admin permissions.
+ * See \ref brmlEnableState_t for details on allowed modes.
+ *
+ * @param device                               The identifier of the target device
+ * @param mode                                 The compute mode to be set
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a mode has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a mode is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetPersistenceMode(brmlDevice_t device, brmlEnableState_t mode);
+
+/**
  * Get the current performance state for the device.
  * See \ref brmlPstate_t for for details on available performance states.
  *
@@ -1645,12 +2115,105 @@ brmlReturn_t DECLDIR brmlDeviceSetComputeMode(brmlDevice_t device, brmlComputeMo
 brmlReturn_t DECLDIR brmlDeviceGetPerformanceState(brmlDevice_t device, brmlPstate_t* pState);
 
 /**
+ * Set the current performance state for the device.
+ * only support \ref BRML_PSTATE_0.
+ *
+ * @param device                               The target device identifier
+ * @param pState                               The performance state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a pState has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or is \a pState invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetPerformanceState(brmlDevice_t device, brmlPstate_t pState);
+
+/**
+ * Get the p2p link capability for the device.
+ *
+ * See \ref brmlEnableState_t for details on allowed modes.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 Specifies the p2p port to be queried
+ * @param cap                                  Specifies the capability to be queried
+ * @param state                                The p2p state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device, cap or \a port is invalid, or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2pLinkCapability(brmlDevice_t device, unsigned int port,
+                                                    brmlP2pLinkCapability_t cap, brmlEnableState_t* state);
+
+/**
+ * Get the p2p link state for the device.
+ *
+ * See \ref brmlEnableState_t for details on allowed modes.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 Specifies the p2p port to be queried
+ * @param state                                The p2p state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid, or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2pLinkState(brmlDevice_t device, unsigned int port, brmlEnableState_t* state);
+
+/**
+ * Get the p2p link state for the device.
+ *
+ * See \ref brmlP2pLinkState_t for details.
+ *
+ * The \a stateInfo->trainingState is the p2p training state and for remote link, it is the training result after calling
+ * the function \ref brmlDeviceSetRemoteP2pTraining. If the p2p training is done, it will keep the value until another p2p
+ * training triggered.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 Specifies the p2p port to be queried
+ * @param stateInfo                            The p2p state info
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid, or \a stateInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2pLinkState_v2(brmlDevice_t device, unsigned int port, brmlP2pLinkState_t* stateInfo);
+
+/**
+ * Get the current p2p link speed for the device.
+ *
+ * The interface can only get p2p link speed after the p2p link state is enabled.
+ * See \ref brmlDeviceGetP2pLinkState to get the p2p link state.
+ * See \ref brmlP2pSpeed_t for details p2p link speed information.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 Specifies the p2p port to be queried
+ * @param currLinkSpeed                        The current p2p link speed
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a currLinkSpeed has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid, or \a currLinkSpeed is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetCurrP2pLinkSpeed(brmlDevice_t device, unsigned int port, brmlP2pLinkSpeed_t* currLinkSpeed);
+
+/**
  * Get the p2p throughput for the device.
  *
  * See \ref brmlP2pThroughput_t for details p2p throughput info.
- * See \ref brmlDeviceGetP2PStatus_v2 to get the p2p port.
- * The p2p throughput monitor should be enabled, \ref brmlDeviceSetP2pThroughputMonitorMode can be used
- * to set the mode.
  *
  * @param device                               The target device identifier
  * @param port                                 Specifies the p2p port to be queried
@@ -1666,9 +2229,29 @@ brmlReturn_t DECLDIR brmlDeviceGetPerformanceState(brmlDevice_t device, brmlPsta
 brmlReturn_t DECLDIR brmlDeviceGetP2pThroughput(brmlDevice_t device, unsigned int port, brmlP2pThroughput_t* p2pThroughput);
 
 /**
+ * Get the total p2p data traffic for the device.
+ *
+ * See \ref brmlP2pTraffic_t for details p2p data traffic information.
+ * The p2p counter is working since driver insmod and the counter can be reset through reseting GPU.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 Specifies the p2p port to be queried
+ * @param dataTraffic                          The p2p data traffic
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a p2pThroughput has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid, or \a dataTraffic is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2pTraffic(brmlDevice_t device, unsigned int port, brmlP2pTraffic_t* dataTraffic);
+
+/**
  * Get the p2p throughput monitor mode for the device.
  *
  * See \ref brmlEnableState_t for details on allowed modes.
+ * @deprecated No longer used after 1.8.0
  *
  * @param device                               The target device identifier
  * @param mode                                 The p2p throughput mode
@@ -1686,6 +2269,7 @@ brmlReturn_t DECLDIR brmlDeviceGetP2pThroughputMonitorMode(brmlDevice_t device, 
  * Set the p2p throughput monitor mode for the device.
  *
  * See \ref brmlEnableState_t for details on allowed modes.
+ * @deprecated No longer used after 1.8.0
  *
  * @param device                               The target device identifier
  * @param mode                                 The p2p throughput mode to be set
@@ -1703,8 +2287,6 @@ brmlReturn_t DECLDIR brmlDeviceSetP2pThroughputMonitorMode(brmlDevice_t device, 
  * Get the GPU memory bandwidth for the device.
  *
  * See \ref brmlMemoryBandwidth_t for details memory bandwidth info.
- * The memory bandwidth monitor should be enabled, \ref brmlDeviceSetMemoryBandwidthMonitorMode can be used
- * to set the mode.
  *
  * @param device                               The target device identifier
  * @param memBandwidth                         The memory bandwidth
@@ -1719,9 +2301,27 @@ brmlReturn_t DECLDIR brmlDeviceSetP2pThroughputMonitorMode(brmlDevice_t device, 
 brmlReturn_t DECLDIR brmlDeviceGetMemoryBandwidth(brmlDevice_t device, brmlMemoryBandwidth_t* memBandwidth);
 
 /**
+ * Get the GPU memory bandwidth utilization for the device.
+ *
+ * See \ref brmlMemoryUtilization_t for details memory bandwidth utilization.
+ *
+ * @param device                               The target device identifier
+ * @param memUtil                              The memory bandwidth utilization
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a memUtil has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a memUtil is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetMemoryBandwidthUtilization(brmlDevice_t device, brmlMemoryUtilization_t* memUtil);
+
+/**
  * Get the GPU memory bandwidth monitor mode for the device.
  *
  * See \ref brmlEnableState_t for details on allowed modes.
+ * @deprecated No longer used after 1.8.0
  *
  * @param device                               The target device identifier
  * @param mode                                 The memory bandwidth mode
@@ -1739,6 +2339,7 @@ brmlReturn_t DECLDIR brmlDeviceGetMemoryBandwidthMonitorMode(brmlDevice_t device
  * Set the GPU memory bandwidth monitor mode for the device.
  *
  * See \ref brmlEnableState_t for details on allowed modes.
+ * @deprecated No longer used after 1.8.0
  *
  * @param device                               The target device identifier
  * @param mode                                 The memory bandwidth mode to be set
@@ -1751,6 +2352,53 @@ brmlReturn_t DECLDIR brmlDeviceGetMemoryBandwidthMonitorMode(brmlDevice_t device
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
 brmlReturn_t DECLDIR brmlDeviceSetMemoryBandwidthMonitorMode(brmlDevice_t device, brmlEnableState_t mode);
+
+/**
+ * Get the gpu state and suggested operation for the device.
+ *
+ * The function can get the gpu \a state and suggested \a operation, the \a operation is just a suggestion
+ * to recover the device, can not make sure recover successfully.
+ *
+ * See \ref brmlGpuState_t for details on available gpu states.
+ * See \ref brmlRecoverOperation_t for details on available recover operations.
+ *
+ * @param device                               The target device identifier
+ * @param state                                The gpu state
+ * @param operation                            The suggested operation to recover the device
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state and \a operation has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, or \a state and \a operation is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetGpuState(brmlDevice_t device, brmlGpuState_t* state,
+                                           brmlRecoverOperation_t* operation);
+
+/**
+ * Get the gpu event information for the device.
+ *
+ * If the specified \a type gpu event doesn't happen, the timestamp and count in \a eventInfo is set to 0.
+ * See \ref brmlGpuEventType_t for details on gpu event type.
+ *
+ * For the event type \ref BRML_GPU_EVENT_REMOVE, \ref BRML_GPU_EVENT_RESET_START, \ref BRML_GPU_EVENT_RESET_END,
+ * \ref BRML_GPU_EVENT_2BIT_ECC_ERROR, the data will kept event after gpu reset.
+ *
+ * @param device                               The target device identifier
+ * @param type                                 The specified event type
+ * @param eventInfo                            The event infomation of the specified type
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a eventInfo has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a type is invalid, or \a eventInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetGpuEventInfo(brmlDevice_t device, brmlGpuEventType_t type,
+                                               brmlGpuEventInfo_t* eventInfo);
+
 
 /** @} */
 
@@ -1820,6 +2468,7 @@ brmlReturn_t DECLDIR brmlDeviceGetUtilizationRates(brmlDevice_t device, brmlUtil
  */
 brmlReturn_t DECLDIR brmlDeviceGetGpuUtilization(brmlDevice_t device, brmlGpuUtilization_t* gpuUtilization,
                                                  unsigned int* samplingPeriodUs);
+
 /**
  * Get the current utilization and sampling size in microseconds for the Encoder
  *
@@ -1869,7 +2518,7 @@ brmlReturn_t DECLDIR brmlDeviceGetDecoderUtilization(brmlDevice_t device, unsign
  *         - \ref BRML_ERROR_UNKNOWN            unknown error occurs
  */
 brmlReturn_t DECLDIR brmlDeviceGetEncoderCapacity(brmlDevice_t device, brmlEncoderType_t encoderQueryType,
-                                                   unsigned int* encoderCapacity);
+                                                  unsigned int* encoderCapacity);
 
 /**
  * Get the current ECC mode for the device.
@@ -1969,7 +2618,7 @@ brmlReturn_t DECLDIR brmlDeviceGetTotalAerErrors(brmlDevice_t device, brmlAerErr
  *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
-brmlReturn_t DECLDIR brmlDeviceGetHealthStatus(brmlDevice_t device, brmlGpuHealthStatus_t *status);
+brmlReturn_t DECLDIR brmlDeviceGetHealthStatus(brmlDevice_t device, brmlGpuHealthStatus_t* status);
 
 /**
  * Get information about running processes.
@@ -2000,6 +2649,21 @@ brmlReturn_t DECLDIR brmlDeviceGetHealthStatus(brmlDevice_t device, brmlGpuHealt
  */
 brmlReturn_t DECLDIR brmlDeviceGetComputeRunningProcesses(brmlDevice_t device, unsigned int* infoCount,
                                                           brmlProcessInfo_t* infos);
+
+/**
+ * Get the optical module infomation for the device.
+ *
+ * @param device                               The target device identifier
+ * @param optModInfo                           The optical module infomation
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a optModInfo has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, or \a optModInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetOpticalModuleInfo(brmlDevice_t device, brmlOpticalModuleInfo_t* optModInfo);
 
 /** @} */
 
@@ -2044,7 +2708,7 @@ brmlReturn_t DECLDIR brmlDeviceGetProcessUtilization(brmlDevice_t device, brmlPr
 
 /***************************************************************************************************/
 /** @defgroup brmlTopology Topology Queries
-* This chapter describes operations that are associated with topology.
+ * This chapter describes operations that are associated with topology.
  *  @{
  */
 /***************************************************************************************************/
@@ -2060,6 +2724,7 @@ brmlReturn_t DECLDIR brmlDeviceGetProcessUtilization(brmlDevice_t device, brmlPr
  *         - \ref BRML_SUCCESS                 \a pathInfo has been set successfully
  *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
  *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device1, or \a device2 is invalid, or \a pathInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
 
@@ -2082,6 +2747,25 @@ brmlReturn_t DECLDIR brmlDeviceGetTopologyCommonAncestor(brmlDevice_t device1, b
 brmlReturn_t DECLDIR brmlDeviceGetLocalCpuList(brmlDevice_t device, char* localCpuList, unsigned int length);
 
 /**
+ * Get the cpu affinity to which this GPU belongs.
+ *
+ * The cpu affinity for the device will be populated in array \a cpuSet, with bitmasks.
+ * For example, if processor 0, 1, 64 and 65 are ideal for the device and \a cpuSetSize is 2,
+ * the value of cpuSet is that, cpuSet[0] is 0x3, cpuSet[1] is 0x3.
+ *
+ * @param device                               The target device identifier
+ * @param cpuSetSize                           The size of array \a cpuSet
+ * @param cpuSet                               The array reference in which to return a bitmask of CPUs
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a cpuSet has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, \a cpuSetSize is 0 or \a cpuSet is NULL
+ */
+
+brmlReturn_t DECLDIR brmlDeviceGetCpuAffinity(brmlDevice_t device, unsigned int cpuSetSize, unsigned long long* cpuSet);
+
+/**
  * Get the NUMA node to which this GPU belongs.
  *
  * @param device                               The target device identifier
@@ -2099,7 +2783,7 @@ brmlReturn_t DECLDIR brmlDeviceGetNumaNode(brmlDevice_t device, unsigned int* nu
  * Get the port number of the first device in the two GPUs which have P2P connection between each other.
  *
  * If device1 has no p2p connection to device2, the \a portNum is set to 9999, means invalid port.
- * And it can only get one p2p port connection for each device. New interface see \ref brmlDeviceGetP2PStatus_v2.
+ * And it can only get one p2p port connection for each device. New interface see \ref brmlDeviceGetP2PStatus_v3.
  *
  * @param device1                                 The first device identifier
  * @param device2                                 The second device identifier
@@ -2125,6 +2809,20 @@ brmlReturn_t DECLDIR brmlDeviceGetP2PStatus(brmlDevice_t device1, brmlDevice_t d
  *         - \ref BRML_ERROR_INVALID_ARGUMENT     \a device1 or \a device2 is invalid, or \a p2pStatus is NULL
  */
 brmlReturn_t DECLDIR brmlDeviceGetP2PStatus_v2(brmlDevice_t device1, brmlDevice_t device2, brmlP2pStatus_t* p2pStatus);
+
+/**
+ * Get the p2p status of the first device in the two GPUs which have P2P connection between each other.
+ *
+ * @param device1                                 The first device identifier
+ * @param device2                                 The second device identifier
+ * @param p2pStatus                               \a device1's p2p status
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                    \a portNum has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED        BRML has not been successfully initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT     \a device1 or \a device2 is invalid, or \a p2pStatus is NULL
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2PStatus_v3(brmlDevice_t device1, brmlDevice_t device2, brmlP2pStatus_v3_t* p2pStatus);
 
 /**
  * Get the link number to which GPU belongs.
@@ -2172,7 +2870,7 @@ brmlReturn_t DECLDIR brmlDeviceGetBrLinkRemotePciInfo(brmlDevice_t device, unsig
  * @return
  *         - \ref BRML_SUCCESS                 \a value has been populated successfully
  *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
- *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device, link or counter is invalid or \a value is NULL
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device, \a link or \a counter is invalid or \a value is NULL
  *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
@@ -2192,11 +2890,405 @@ brmlReturn_t DECLDIR brmlDeviceGetBrLinkErrorCounter(brmlDevice_t device, unsign
  * @return
  *         - \ref BRML_SUCCESS                 \a state has been populated successfully
  *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
- *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or link is invalid or \a state is NULL
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a link is invalid or \a state is NULL
  *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
 brmlReturn_t DECLDIR brmlDeviceGetBrLinkState(brmlDevice_t device, unsigned int link, brmlEnableState_t* state);
+
+/**
+ * Get the brlink generation.
+ *
+ * See \ref brmlDeviceGetBrLinkNumber to get the total link number.
+ *
+ * @param device                               The target device identifier
+ * @param link                                 The specified link to be queried
+ * @param linkGen                              The brlink generation
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a linkGen has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a link is invalid or \a linkGen is NULL
+ *         - \ref BRML_ERROR_NOT_FOUND         \a linkGen is not found
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetBrLinkGeneration(brmlDevice_t device, unsigned int link, unsigned int* linkGen);
+
+/**
+ * Get the remote p2p training state.
+ *
+ * See \ref brmlRemoteP2pTrainingState_t for details on available states.
+ *
+ * @param device                               The target device identifier
+ * @param state                                The remote p2p training state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRemoteP2pTrainingState(brmlDevice_t device, brmlRemoteP2pTrainingState_t* state);
+
+/**
+ * Set the remote p2p training with specified p2p port.
+ *
+ * See \ref brmlRemoteP2pTrainingState_t for details on available states.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 The specified p2p port to be set
+ * @param state                                The remote p2p training state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetRemoteP2pTraining(brmlDevice_t device, unsigned int port,
+                                                    brmlRemoteP2pTrainingState_t* state);
+
+/**
+ * Set the cluster info.
+ *
+ * The interface is for dcgm to configure cluster information.
+ *
+ * @param clusterInfo                          The cluster info
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a clusterInfo has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a clusterInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetClusterInfo(void* clusterInfo);
+
+/**
+ * Set the topo matrix.
+ *
+ * The interface is for dcgm to configure topo matrix information.
+ *
+ * @param topoMatrix                           The cluster topo matrix
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a topoMatrix has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a topoMatrix is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetClusterTopoMatrix(void* topoMatrix);
+
+/**
+ * get the server id for currect system.
+ *
+ * @param serverId                             The server id
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a serverId has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a serverId is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetServerId(unsigned int* serverId);
+
+/**
+ * get the connection state to the remote gpu for the device.
+ *
+ * See \ref brmlEnableState_t for details on available states.
+ * See \ref BRML_DEVICE_PCI_BUS_ID_FMT for the formate of \a pciBusId.
+ * The \a state reflects the connection in topo matrix and p2p training state, if \a state is \ref BRML_FEATURE_ENABLED,
+ * it should be in topo matrix and the \a device p2p training state should be \ref BRML_P2P_TRAINIG_READY.
+ *
+ * @param device                               The identifier of the target device
+ * @param serverId                             The remote server id
+ * @param pciBusId                             The PCI bus id of the remote GPU
+ * @param state                                The connection state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a pciBusId, state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_NOT_FOUND         If the remote gpu is not found.
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRemoteLinkState(brmlDevice_t device, unsigned int serverId,
+                                                  const char* pciBusId, brmlEnableState_t* state);
+
+/**
+ * get the topo id for currect system.
+ *
+ * @param topo                                 The GPU topo mode
+ * @param subTopo                              The GPU sub topo id
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a topo and \a subTopo has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a topo or \a subTopo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetTopoId(unsigned int* topo, unsigned int* subTopo);
+
+/**
+ * Set the system cluster info for ocs connection.
+ *
+ * @param clusterInfo                          The cluster info
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a clusterInfo has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a clusterInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlSystemSetClusterInfo(void* clusterInfo);
+
+/**
+ * Set the topo matrix for ocs connection.
+ *
+ * @param topoMatrix                           The cluster topo matrix
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a topoMatrix has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a topoMatrix is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlSystemSetClusterTopoMatrix(void* topoMatrix);
+
+/**
+* Get the the system node id and cluster id for ocs connection.
+*
+* @param nodeId                               The ocs system node id
+* @param clusterId                            The ocs system cluster id
+*
+* @return
+*         - \ref BRML_SUCCESS                 \a nodeId and \a clusterId has been populated successfully
+*         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+*         - \ref BRML_ERROR_INVALID_ARGUMENT  \a nodeId or \a clusterId is NULL
+*         - \ref BRML_ERROR_NOT_SUPPORTED     this query is not supported
+*         - \ref BRML_ERROR_NO_DATA           cluster info is not defined
+*         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+*/
+brmlReturn_t DECLDIR brmlSystemGetOcsNodeClusterId(unsigned int* nodeId, unsigned int* clusterId);
+
+/**
+ * Get the ocs remote link number to which GPU belongs.
+ *
+ * @param device                               The target device identifier
+ * @param linkNum                              The ocs remote link number
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a linkNum has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a linkNum is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_NO_DATA           cluster info or topo matrix is not defined
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetOcsRemoteLinkNumber(brmlDevice_t device, unsigned int* linkNum);
+
+/**
+ * Get the port id of ocs remote link to which GPU belongs.
+ *
+ * @param device                               The target device identifier
+ * @param link                                 The specified ocs remote link to be queried
+ * @param port                                 The port id of \a link
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a port has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a link is invalid or \a port is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_NO_DATA           cluster info or topo matrix is not defined
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetOcsRemoteLinkPort(brmlDevice_t device, unsigned int link, unsigned int* port);
+
+/**
+ * Get the ocs remote link connection information to which GPU belongs.
+ *
+ * @param device                               The target device identifier
+ * @param link                                 The specified ocs remote link to be queried
+ * @param ocsConnInfo                          The ocs remote link connection information
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a ocsConnInfo has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a link is invalid or \a ocsConnInfo is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_NO_DATA           cluster info or topo matrix is not defined
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetOcsRemoteLinkConnInfo(brmlDevice_t device, unsigned int link,
+                                                        brmlOcsConnInfo_t* ocsConnInfo);
+/**
+* Set the fabric info.
+*
+* @param fabricInfo                           The fabric info
+*
+* @return
+*         - \ref BRML_SUCCESS                 \a fabric has been set successfully
+*         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+*         - \ref BRML_ERROR_INVALID_ARGUMENT  \a fabric is NULL
+*         - \ref BRML_ERROR_NOT_SUPPORTED     this feature is not supported
+*         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+*/
+brmlReturn_t DECLDIR brmlDeviceSetFabricInfo(brmlDevice_t device, void* fabricInfo);
+
+/**
+* Get the fabric info for the device.
+*
+* @param device                               The target device identifier
+* @param fabricInfo                           The fabric info
+*
+* @return
+*         - \ref BRML_SUCCESS                 \a fabricInfo has been populated successfully
+*         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+*         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a fabricInfo is NULL
+*         - \ref BRML_ERROR_NOT_SUPPORTED     this query is not supported
+*         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+*/
+brmlReturn_t DECLDIR brmlDeviceGetFabricInfo(brmlDevice_t device, brmlGpuFabricInfo_t* fabricInfo);
+
+/**
+* Get the topology status for the device.
+*
+* The p2p 2 ~ 10 is used for GPU connection, different topology use different port.
+* The \a type means the query type:
+*   0: check link state and mps (should be link up and mps is 512)
+*   1: check link speed, width and mps (should be Gen5, X8 and mps is 512).
+* The \a status is a bitmask for differnt port status. For example, if port 3, 4 has issue, \a status is 0x18,
+* and if \a status is 0, it means no topo issue found.
+*
+* @param device                               The target device identifier
+* @param type                                 The specified type.
+* @param status                               The port status with bitmask
+*
+* @return
+*         - \ref BRML_SUCCESS                 \a fabricInfo has been populated successfully
+*         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+*         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a type is invalid or \a status is NULL
+*         - \ref BRML_ERROR_NOT_SUPPORTED     this query is not supported
+*         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+*/
+brmlReturn_t DECLDIR brmlDeviceGetTopoStatus(brmlDevice_t device, unsigned int type, unsigned int *status);
+
+/** @} */
+
+/***************************************************************************************************/
+/** @defgroup brmlDrainState Drain states
+ * This chapter describes methods that BRML can control their drain state.
+ *  @{
+ */
+/***************************************************************************************************/
+
+/**
+ * Query the drain state of a GPU.
+ *
+ * See \ref brmlPciInfo_t for details on the available PCI info.
+ * See \ref brmlEnableState_t for details on available states.
+ * \a pciInfo is the GPU pci address, need set the members \a domain, \a bus, \a device and \a function.
+ *
+ * @param pciInfo                              The pci address of GPU to be queried
+ * @param state                                The current drain state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a pciInfo or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceQueryDrainState(brmlPciInfo_t* pciInfo, brmlEnableState_t* state);
+
+/**
+ * Modify the drain state of a GPU.
+ *
+ * See \ref brmlPciInfo_t for details on the available PCI info.
+ * See \ref brmlEnableState_t for details on available states.
+ * \a pciInfo is the GPU pci address, need set the members \a domain, \a bus, \a device and \a function.
+ * Any new BRML process will no longer see the GPU.
+ *
+ * Requires root/admin permissions.
+ *
+ * @param pciInfo                              The pci address of GPU to be queried
+ * @param state                                The drain state to be set
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a pciInfo or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceModifyDrainState(brmlPciInfo_t* pciInfo, brmlEnableState_t state);
+
+/** @} */
+
+/***************************************************************************************************/
+/** @defgroup brmlRdmaQueries Rdma Queries
+ * This chapter describes the functions for rdma device.
+ *  @{
+ */
+/***************************************************************************************************/
+
+/**
+ * Get the number of rdma card.
+ *
+ * @param cardCount                           The amount of accessible rdma cards
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a cardCount has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a cardCount is NULL
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRdmaCardCount(unsigned int* cardCount);
+
+/**
+ * Get the index of rdma device in BRML.
+ *
+ * @param device                               The target rdma card identifier
+ * @param index                                The BRML index of the rdma card
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a index has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid, or \a index is NULL
+ *         - \ref BRML_ERROR_NOT_FOUND         \a device is not found
+ *
+ * @see brmlDeviceGetRdmaCardByIndex()
+ * @see brmlDeviceGetRdmaCardCount()
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRdmaCardIndex(brmlDevice_t device, unsigned int* index);
+
+/**
+ * Get the rdma card through Index.
+ *
+ * Valid indices are determined by \ref brmlDeviceGetRdmaCardCount() and delivered by \a rdmaCount.
+ * For example, if \a rdmaCount is 2, the valid indices will be 0 and 1.
+ *
+ * @param index                                 The target rdma's index, >= 0 and < \a rdmaCount
+ * @param device                                The device handle
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                  \a device has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED      BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT   \a device is invailid
+ *         - \ref BRML_ERROR_NOT_FOUND          \a index does not match a device
+ *
+ * @see brmlDeviceGetRdmaCardIndex
+ * @see brmlDeviceGetRdmaCardCount
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRdmaCardByIndex(unsigned int index, brmlDevice_t* cardDev);
 
 /** @} */
 
@@ -2387,6 +3479,10 @@ brmlReturn_t DECLDIR brmlDeviceGetHealthCheckCpTimeout(brmlDevice_t device, unsi
 /**
  * Set the health check cp timeout for the device.
  *
+ * 1. The default timeout is set to 600s, when updating this configuration, the \a timeout at least 60s.
+ * 2. The \a timeout must larger than software sync timeout \ref brmlDeviceGetSoftwareSyncTimeout and
+ * \ref brmlDeviceSetSoftwareSyncTimeout.
+ *
  * @param device                               The identifier of the target device
  * @param timeout                              The timeout to be set
  *
@@ -2416,6 +3512,10 @@ brmlReturn_t DECLDIR brmlDeviceGetHealthCheckSdmaTimeout(brmlDevice_t device, un
 
 /**
  * Set the health check Sdma timeout for the device.
+ *
+ * 1. The default timeout is set to 600s, when updating this configuration, the \a timeout at least 60s.
+ * 2. The \a timeout must larger than software sync timeout \ref brmlDeviceGetSoftwareSyncTimeout and
+ * \ref brmlDeviceSetSoftwareSyncTimeout.
  *
  * @param device                               The identifier of the target device
  * @param timeout                              The timeout to be set
@@ -2489,6 +3589,324 @@ brmlReturn_t DECLDIR brmlDeviceGetWawMode(brmlDevice_t device, unsigned int* mod
  *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
  */
 brmlReturn_t DECLDIR brmlDeviceSetWawMode(brmlDevice_t device, unsigned int mode);
+
+/**
+ * Get the software sync timeout for the device.
+ *
+ * @param device                               The identifier of the target device
+ * @param timeout                              The current timeout, in seconds
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a timeout has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a timeout is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetSoftwareSyncTimeout(brmlDevice_t device, unsigned int* timeout);
+
+/**
+ * Set the software sync timeout for the device.
+ *
+ * The default timeout is 600s, when updating this configuration, the \a timeout must largetr than 1s.
+ *
+ * @param device                               The identifier of the target device
+ * @param timeout                              The timeout to be set, in seconds
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a timeout has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a timeout is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetSoftwareSyncTimeout(brmlDevice_t device, unsigned int timeout);
+
+/**
+ * Get the recovery timeout for the device.
+ *
+ * @param device                               The identifier of the target device
+ * @param timeout                              The current timeout, in seconds
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a timeout has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a timeout is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRecoveryTimeout(brmlDevice_t device, unsigned int* timeout);
+
+/**
+ * Set the recovery timeout for the device.
+ *
+ * The default recovery timeout is 10s, when updating this configuration, suggest the \a timeout largetr than 10s.
+ *
+ * @param device                               The identifier of the target device
+ * @param timeout                              The timeout to be set, in seconds
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a timeout has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a timeout is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetRecoveryTimeout(brmlDevice_t device, unsigned int timeout);
+
+/**
+ * Get noc client priority for the device.
+ *
+ * The noc client from hardware has not default priority, if the priority is not set by default,
+ * the result of \a prioroty here is populated to BRML_NOC_PRIORITY_0. Suggest to use this interface
+ * only after setting noc client priority by \ref brmlDeviceSetNocClientPriority.
+ *
+ * @param device                               The identifier of the target device
+ * @param client                               The specified noc client, \ref  brmlNocClient_t
+ * @param priority                             The current priority, \ref brmlNocPriority_t
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a timeout has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a client is invalid or \a priority is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetNocClientPriority(brmlDevice_t device, brmlNocClient_t client,
+                                                    brmlNocPriority_t* priority);
+
+/**
+ * Set the noc client priority for the device.
+ *
+ * @param device                               The identifier of the target device
+ * @param client                               The specified noc client, \ref  brmlNocClient_t
+ * @param priority                             The priority to be set, \ref brmlNocPriority_t
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a priority has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device, \a client or \a priority is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetNocClientPriority(brmlDevice_t device, brmlNocClient_t client,
+                                                    brmlNocPriority_t priority);
+
+/**
+ * Set the memory as abort memory.
+ *
+ * @param device                               The identifier of the target device
+ * @param memory                               The abort memory
+ * @param len                                  The size of memory
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a memory has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a memory is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetAbortMemory(brmlDevice_t device, void* memory, unsigned long long len);
+
+/**
+ * Get the atomic status.
+ *
+ * @param device                               The identifier of the target device
+ * @param status                               The atomic status
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a memory has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a status is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetAtomicStatus(brmlDevice_t device, unsigned int* status);
+
+/**
+ * Get PCIe data count in 200ms.
+ *
+ * Only for brsmi.
+ * @deprecated No longer used after 1.10.0
+ *
+ * @param device                               The identifier of the target device
+ * @param txCount                              Tx data count in MB
+ * @param rxCount                              Rx data count in MB
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a txCount and \a rxCount has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a counter is invalid, or \a value is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetPcieThroughputNum(brmlDevice_t device, unsigned int* txCount, unsigned int* rxCount);
+
+/**
+ * Get the device chip series type.
+ *
+ * @param device                               The identifier of the target device
+ * @param series                               GPU series type
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a series has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a series is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetChipSeries(brmlDevice_t device, brmlAsicType_t *series);
+
+/**
+ * Get the device region bit and size.
+ *
+ * @param device                               The identifier of the target device
+ * @param index                                The region index to query
+ * @param bit                                  The region bit, 32 or 64
+ * @param size                                 The region size
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a bit and \a size has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a bit, \a size is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetRegionSize(brmlDevice_t device, unsigned int index,
+                                             unsigned int* bit, unsigned long long* size);
+
+/**
+ * Get the device board's FRU information.
+ *
+ * @param device                                The identifier of the target device
+ * @param raw                                   The Fru info
+ * @param length                                The length of \a raw
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                  \a raw has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED      BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT   \a device is invalid or \a raw is NULL
+ *         - \ref BRML_ERROR_INSUFFICIENT_SIZE  \a length is too small
+ *         - \ref BRML_ERROR_NOT_SUPPORTED       the device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN            unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetBoardFruData(brmlDevice_t device, void* raw, unsigned int length);
+
+/**
+ * Force clean up brml resource，can be used in signal handler.
+ *
+ * Only for brsmi.
+ * @deprecated No longer used after 1.10.1
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 if BRML has been properly exit
+ */
+brmlReturn_t DECLDIR brmlExit(void);
+
+/**
+ * Get the spc remote p2p for the device.
+ *
+ * Only for OCS connection.
+ *
+ * @param device                               The identifier of the target device
+ * @param remoteP2p                            The array of spc remote p2p
+ * @param length                               The maximum length of the array in \a remoteP2p
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a remoteP2p has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a remoteP2p is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetSpcRemoteP2p(brmlDevice_t device, unsigned char* remoteP2p, unsigned int length);
+
+/**
+ * Set the spc remote p2p for the device.
+ *
+ * Only for OCS connection.
+ *
+ * @param device                               The identifier of the target device
+ * @param remoteP2p                            The array of spc remote p2p to be set
+ * @param length                               The maximum length of the array in \a remoteP2p
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a remoteP2p has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a remoteP2p is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetSpcRemoteP2p(brmlDevice_t device, unsigned char* remoteP2p, unsigned int length);
+
+/**
+ * Get the cpdma eu remote p2p for the device.
+ *
+ * Only for OCS connection.
+ *
+ * @param device                               The identifier of the target device
+ * @param remoteP2p                            The array of cpdma eu remote p2p
+ * @param length                               The maximum length of the array in \a remoteP2p
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a remoteP2p has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a remoteP2p is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetCpdmaEuRemoteP2p(brmlDevice_t device, unsigned char* remoteP2p, unsigned int length);
+
+/**
+ * Set the cpdma eu remote p2p for the device.
+ *
+ * Only for OCS connection.
+ *
+ * @param device                               The identifier of the target device
+ * @param remoteP2p                            The array of cpdma eu remote p2p to be set
+ * @param length                               The maximum length of the array in \a remoteP2p
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a remoteP2p has been set successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device is invalid or \a remoteP2p is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceSetCpdmaEuRemoteP2p(brmlDevice_t device, unsigned char* remoteP2p, unsigned int length);
+
+/**
+ * Get p2p ltssm state.
+ * Only for ocs connection.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 The specified p2p port to be queried
+ * @param state                                The current p2p ltssm state
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a state has been populated successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid or \a state is NULL
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceGetP2pLtssmState(brmlDevice_t device, unsigned int port, brmlEnableState_t *state);
+
+/**
+ * Disable p2p ltssm.
+ * Only for ocs connection.
+ *
+ * @param device                               The target device identifier
+ * @param port                                 The specified p2p port to be disabled ltssm
+ *
+ * @return
+ *         - \ref BRML_SUCCESS                 \a port ltssm has been disabled successfully
+ *         - \ref BRML_ERROR_UNINITIALIZED     BRML has not been initialized
+ *         - \ref BRML_ERROR_INVALID_ARGUMENT  \a device or \a port is invalid
+ *         - \ref BRML_ERROR_NOT_SUPPORTED     \a device does not support this feature
+ *         - \ref BRML_ERROR_UNKNOWN           unknown error occurs
+ */
+brmlReturn_t DECLDIR brmlDeviceDisableP2pLtssmState(brmlDevice_t device, unsigned int port);
 
 /** @} */
 
@@ -2579,3 +3997,4 @@ brmlReturn_t DECLDIR brmlDeviceGetInstanceNumber(brmlDevice_t device, unsigned i
 #endif
 
 #endif
+
