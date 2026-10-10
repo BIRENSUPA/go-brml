@@ -15,6 +15,7 @@ gen: pre
 	cd $(BINDING_DIR); \
 	go tool cgo -godefs types.go > types_gen.go; \
 	sed -i 's/Free\tuint64/Freed\tuint64/g' types_gen.go; \
+	sed -i 's/Free\t\tuint64/Freed\t\tuint64/g' types_gen.go; \
 	rm -rf types.go _obj; \
 	git checkout brml.h  # 撤销 brml.h 的修改
 	

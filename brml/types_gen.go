@@ -83,6 +83,13 @@ type Memory struct {
 	Used	uint64
 }
 
+type Memory_v2 struct {
+	Total		uint64
+	Freed		uint64
+	Used		uint64
+	Fragment	uint64
+}
+
 type ProcessInfo struct {
 	Pid		uint32
 	UsedGpuMemory	uint64
@@ -100,13 +107,7 @@ type ProcessUtilizationSample struct {
 	Pid		uint32
 	TimeStamp	uint64
 	MemUtil		uint32
-	Pad_cgo_0	[4]byte
-}
-
-type EventData struct {
-	Device		Device
-	EventType	uint64
-	EventData	uint64
+	SpcUtil		uint32
 }
 
 type PowerSamples struct {
@@ -121,12 +122,101 @@ type P2pStatus struct {
 	Port	[8]uint32
 }
 
+type P2pLinkInfo struct {
+	Port	uint32
+	Gen	uint32
+	State	uint32
+}
+
+type P2pStatus_v3 struct {
+	Type	uint32
+	LinkNum	uint32
+	P2pLink	[8]P2pLinkInfo
+}
+
 type P2pThroughput struct {
 	Rx_throughput	uint32
 	Tx_throughput	uint32
 }
 
+type P2pTraffic struct {
+	RxTraffic	uint64
+	TxTraffic	uint64
+}
+
 type MemoryBandwidth struct {
 	Read_bandwidth	uint32
 	Write_bandwidth	uint32
+}
+
+type MemoryUtilization struct {
+	ReadUtil	uint32
+	WriteUtil	uint32
+	CopyUtil	uint32
+}
+
+type GpuEventInfo struct {
+	EventType	uint32
+	Timestamp	uint64
+	Count		uint32
+	Pad_cgo_0	[4]byte
+}
+
+type GpuIdInfo struct {
+	GpuId		uint32
+	Domain		uint32
+	Bus		uint32
+	Device		uint32
+	Function	uint32
+}
+
+type GpuList struct {
+	Count		uint32
+	GpuIdInfo	[16]GpuIdInfo
+}
+
+type OpticalModuleInfo struct {
+	VendorName	[32]int8
+	VendorPN	[32]int8
+	VendorSN	[32]int8
+	PowerState	[32]int8
+	Temperature	uint32
+	Voltage		uint32
+}
+
+type P2pLinkSpeed struct {
+	Generation	uint32
+	Width		uint32
+}
+
+type P2pLinkState struct {
+	IsReady		uint32
+	LinkState	uint32
+	Generation	uint32
+	Width		uint32
+	MaxPayloadSize	uint32
+	BusMasterEnable	uint32
+	TrainingState	uint32
+}
+
+type OcsConnInfo struct {
+	NodeId		uint32
+	ClusterId	uint32
+	GpuId		uint32
+	Port		uint32
+	Domain		uint32
+	Bus		uint32
+	Device		uint32
+	Function	uint32
+	BusId		[32]int8
+	NodeIp		[64]int8
+}
+
+type GpuFabricInfo struct {
+	Version		uint32
+	ClusterUuid	[16]uint8
+	Status		uint32
+	CliqueId	uint32
+	State		uint32
+	HealthMask	uint32
 }
